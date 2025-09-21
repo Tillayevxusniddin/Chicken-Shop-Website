@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_DB=chicken_store
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5435:5432"
+    # <-- SOG'LIQNI TEKSHIRISH BLOKI QO'SHILDI -->
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d chicken_store"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  backend:
+    build: .
+    command: daphne -b 0.0.0.0 -p 8000 chicken_store.asgi:application
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      db: # <-- 'db' SERVISIGA BOG'LIQLIK O'ZGARTIRILDI
+        condition: service_healthy # Faqat sog'lom bo'lgandan keyin ishga tushadi
+      redis:
+        condition: service_started
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@db:5432/chicken_store
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+
+  celery:
+    build: .
+    command: celery -A chicken_store worker -l info
+    volumes:
+      - .:/app
+    depends_on:
+      db: # <-- 'db' SERVISIGA BOG'LIQLIK O'ZGARTIRILDI
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@db:5432/chicken_store
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+  
+  celery-beat:
+    build: .
+    command: celery -A chicken_store beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    volumes:
+      - .:/app
+    depends_on:
+      db: # <-- 'db' SERVISIGA BOG'LIQLIK O'ZGARTIRILDI
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@db:5432/chicken_store
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+
+volumes:
+  postgres_data:
+

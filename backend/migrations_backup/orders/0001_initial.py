@@ -1,0 +1,52 @@
+# Backup copy orders 0001
+from django.db import migrations, models
+
+class Migration(migrations.Migration):
+    initial = True
+    dependencies = []
+    operations = [
+        migrations.CreateModel(
+            name='Order',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('order_number', models.CharField(editable=False, max_length=20, unique=True, verbose_name='Buyurtma raqami')),
+                ('status', models.CharField(choices=[('pending', 'Kutilmoqda'), ('reviewing', "Ko'rib chiqilmoqda"), ('process', 'Tayyorlanmoqda'), ('shipping', "Jo'natilmoqda"), ('completed', 'Yakunlangan'), ('cancelled', 'Bekor qilingan')], default='pending', max_length=20, verbose_name='Holati')),
+                ('total_weight', models.DecimalField(decimal_places=2, default=0.0, max_digits=10, verbose_name="Jami og'irlik (kg)")),
+                ('notes', models.TextField(blank=True, null=True, verbose_name='Izohlar')),
+                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Yaratilgan vaqti')),
+                ('updated_at', models.DateTimeField(auto_now=True, verbose_name='Yangilangan vaqti')),
+                ('whatsapp_sent', models.BooleanField(default=False)),
+                ('whatsapp_message_id', models.CharField(blank=True, max_length=100, null=True)),
+            ],
+            options={'ordering': ['-created_at']},
+        ),
+        migrations.CreateModel(
+            name='OrderHistory',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('order_data', models.JSONField(verbose_name="Buyurtma ma'lumotlari")),
+                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Yaratilgan vaqti')),
+            ],
+        ),
+        migrations.CreateModel(
+            name='OrderItem',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('quantity_kg', models.DecimalField(decimal_places=2, max_digits=10, verbose_name='Miqdori (kg)')),
+                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Yaratilgan vaqti')),
+            ],
+        ),
+        migrations.CreateModel(
+            name='OrderReport',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('report_type', models.CharField(choices=[('daily', 'Daily'), ('range', 'Date Range')], max_length=20)),
+                ('start_date', models.DateField(blank=True, null=True)),
+                ('end_date', models.DateField(blank=True, null=True)),
+                ('file_path', models.CharField(max_length=255)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('status', models.CharField(default='pending', max_length=20)),
+                ('error_message', models.TextField(blank=True, null=True)),
+            ],
+        ),
+    ]
